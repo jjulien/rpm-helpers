@@ -1,0 +1,32 @@
+#!/bin/bash
+
+#
+# This file will build a source tarball and an RPM from that source
+# It makes the assumption that the RPM you want to build matches the name
+# of your current directory and that the spec file also matches this name ending in .spec
+#
+
+# Setup rpm directories
+mkdir -p ~/rpmbuild/{BUILD,BUILDROOT,RPMS,SRPMS,SPECS,SOURCES}
+
+package=$(basename $(pwd))
+spec="${package}.spec"
+version=$(rpm -q --queryformat="%{version}" --specfile "$spec")
+link="$(dirname $(pwd))/${package}-${version}"
+source="$HOME/rpmbuild/SOURCES/${package}-${version}.tar.gz"
+srpm="$(rpm -q --queryformat="%{name}-%{version}-%{release}" --specfile "${package}.spec").src.rpm"
+binrpm="$(rpm -q --queryformat="%{name}-%{version}-%{release}.%{arch}" --specfile "${package}.spec").rpm"
+arch="$(rpm -q --queryformat="%{arch}" --specfile "${package}.spec")"
+
+if [[ ! -L "$link" ]]; then
+  ln -s "$(pwd)" "$link"
+fi
+
+cd ..
+tar -cvzf $source ${package}-${version}/*
+#rpmbuild -bs ${package}-${version}/${package}.spec
+rpmbuild -bb ${package}-${version}/${package}.spec
+
+echo ""
+ls -al "$HOME/rpmbuild/RPMS/$arch/$binrpm"
+rm "$link"
